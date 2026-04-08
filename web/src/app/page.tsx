@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -17,13 +18,15 @@ export default function LoginPage() {
     const res = await fetch('/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ email, password }),
     })
+
+    const data = await res.json()
 
     if (res.ok) {
       router.push('/dashboard')
     } else {
-      setError('Mot de passe incorrect')
+      setError(data.error || 'Erreur de connexion')
     }
     setLoading(false)
   }
@@ -32,11 +35,27 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold">Cartel Conciergeries</h1>
+          <h1 className="text-2xl font-bold" style={{ color: '#00A8E8' }}>
+            Cartel Conciergeries
+          </h1>
           <p className="text-gray-500 mt-1 text-sm">Administration</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00A8E8] focus:border-transparent"
+              placeholder="admin@cartel.ga"
+              required
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Mot de passe
@@ -45,8 +64,8 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
-              placeholder="Mot de passe admin"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00A8E8] focus:border-transparent"
+              placeholder="Mot de passe"
               required
             />
           </div>
@@ -58,7 +77,8 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-[var(--primary)] text-white rounded-xl font-semibold hover:opacity-90 disabled:opacity-50 transition cursor-pointer"
+            className="w-full py-3 text-white rounded-xl font-semibold hover:opacity-90 disabled:opacity-50 transition cursor-pointer"
+            style={{ backgroundColor: '#00A8E8' }}
           >
             {loading ? 'Connexion...' : 'Se connecter'}
           </button>
