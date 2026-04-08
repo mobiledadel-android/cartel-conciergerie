@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { getSupabase } from '@/lib/supabase'
 import { getRoleLabel, getRoleColor, type Admin, type AdminRole } from '@/lib/admin'
 import { formatDate } from '@/lib/format'
-import { Plus, X, Shield, ShieldOff } from 'lucide-react'
+import { Plus, X, Shield, ShieldOff, Copy, Check, Key } from 'lucide-react'
 
 const ROLES: { value: AdminRole; label: string }[] = [
   { value: 'superviseur', label: 'Superviseur' },
@@ -18,12 +18,21 @@ export default function AdminsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [currentAdmin, setCurrentAdmin] = useState<Admin | null>(null)
 
-  // Formulaire
+  // Formulaire création
   const [newEmail, setNewEmail] = useState('')
-  const [newPassword, setNewPassword] = useState('')
   const [newName, setNewName] = useState('')
   const [newRole, setNewRole] = useState<AdminRole>('superviseur')
   const [creating, setCreating] = useState(false)
+
+  // Résultat création
+  const [createdPassword, setCreatedPassword] = useState<string | null>(null)
+  const [emailSent, setEmailSent] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  // Changement mot de passe
+  const [changingPwdFor, setChangingPwdFor] = useState<Admin | null>(null)
+  const [newPwd, setNewPwd] = useState('')
+  const [pwdChanged, setPwdChanged] = useState(false)
 
   useEffect(() => {
     loadCurrentAdmin()
@@ -46,34 +55,59 @@ export default function AdminsPage() {
   }
 
   async function createAdmin() {
-    if (!newEmail || !newPassword || !newName) return
+    if (!newEmail || !newName) return
     setCreating(true)
 
-    await getSupabase().rpc('admin_create', {
-      p_email: newEmail,
-      p_password: newPassword,
-      p_full_name: newName,
-      p_role: newRole,
-      p_created_by: currentAdmin?.id,
+    const res = await fetch('/api/create-admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: newEmail,
+        full_name: newName,
+        role: newRole,
+        created_by: currentAdmin?.id,
+        dashboard_url: window.location.origin,
+      }),
     })
 
-    // Log
-    if (currentAdmin) {
-      await getSupabase().from('admin_logs').insert({
-        admin_id: currentAdmin.id,
-        action: 'create_admin',
-        target_type: 'admin',
-        details: { email: newEmail, role: newRole },
-      })
+    const data = await res.json()
+
+    if (res.ok) {
+      setCreatedPassword(data.password)
+      setEmailSent(data.email_sent)
+
+      // Log
+      if (currentAdmin) {
+        await getSupabase().from('admin_logs').insert({
+          admin_id: currentAdmin.id,
+          action: 'create_admin',
+          target_type: 'admin',
+          details: { email: newEmail, role: newRole },
+        })
+      }
+
+      loadAdmins()
     }
 
+    setCreating(false)
+  }
+
+  function closeCreateModal() {
+    setShowCreate(false)
+    setCreatedPassword(null)
+    setEmailSent(false)
+    setCopied(false)
     setNewEmail('')
-    setNewPassword('')
     setNewName('')
     setNewRole('superviseur')
-    setShowCreate(false)
-    setCreating(false)
-    loadAdmins()
+  }
+
+  async function copyPassword() {
+    if (createdPassword) {
+      await navigator.clipboard.writeText(createdPassword)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
   }
 
   async function toggleActive(admin: Admin) {
@@ -92,6 +126,36 @@ export default function AdminsPage() {
     }
 
     loadAdmins()
+  }
+
+  async function changePassword() {
+    if (!changingPwdFor || !newPwd || newPwd.length < 6) return
+
+    const res = await fetch('/api/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        admin_id: changingPwdFor.id,
+        new_password: newPwd,
+      }),
+    })
+
+    if (res.ok) {
+      setPwdChanged(true)
+      if (currentAdmin) {
+        await getSupabase().from('admin_logs').insert({
+          admin_id: currentAdmin.id,
+          action: 'change_password',
+          target_type: 'admin',
+          target_id: changingPwdFor.id,
+        })
+      }
+      setTimeout(() => {
+        setChangingPwdFor(null)
+        setNewPwd('')
+        setPwdChanged(false)
+      }, 2000)
+    }
   }
 
   if (loading) return <div className="text-center py-20 text-gray-400">Chargement...</div>
@@ -136,74 +200,169 @@ export default function AdminsPage() {
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold">Nouvel administrateur</h2>
-              <button onClick={() => setShowCreate(false)} className="cursor-pointer">
-                <X size={20} className="text-gray-400" />
-              </button>
-            </div>
+            {createdPassword ? (
+              // Résultat : mot de passe généré
+              <div>
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+                    <Check size={32} className="text-green-600" />
+                  </div>
+                  <h2 className="text-lg font-bold">Administrateur créé !</h2>
+                  {emailSent ? (
+                    <p className="text-sm text-gray-500 mt-2">Un email avec les identifiants a été envoyé à <strong>{newEmail}</strong></p>
+                  ) : (
+                    <p className="text-sm text-amber-600 mt-2">L&apos;email n&apos;a pas pu être envoyé. Transmettez les identifiants manuellement.</p>
+                  )}
+                </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nom complet</label>
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={e => setNewName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00A8E8]"
-                  placeholder="Jean Dupont"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={newEmail}
-                  onChange={e => setNewEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00A8E8]"
-                  placeholder="nom@cartel.ga"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00A8E8]"
-                  placeholder="Minimum 8 caractères"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Rôle</label>
-                <select
-                  value={newRole}
-                  onChange={e => setNewRole(e.target.value as AdminRole)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00A8E8]"
-                >
-                  {ROLES.map(r => (
-                    <option key={r.value} value={r.value}>{r.label}</option>
-                  ))}
-                </select>
-              </div>
+                <div className="bg-gray-50 rounded-xl p-4 mb-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Email</span>
+                    <span className="font-medium">{newEmail}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Mot de passe</span>
+                    <div className="flex items-center gap-2">
+                      <code className="font-bold text-pink-600 bg-white px-2 py-1 rounded border text-sm">{createdPassword}</code>
+                      <button onClick={copyPassword} className="cursor-pointer p-1 hover:bg-gray-200 rounded">
+                        {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} className="text-gray-400" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Rôle</span>
+                    <span>{getRoleLabel(newRole)}</span>
+                  </div>
+                </div>
 
-              <div className="flex gap-3 pt-2">
                 <button
-                  onClick={() => setShowCreate(false)}
-                  className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={createAdmin}
-                  disabled={creating}
-                  className="flex-1 py-2.5 text-white rounded-xl text-sm font-medium hover:opacity-90 disabled:opacity-50 transition cursor-pointer"
+                  onClick={closeCreateModal}
+                  className="w-full py-2.5 text-white rounded-xl text-sm font-medium hover:opacity-90 transition cursor-pointer"
                   style={{ backgroundColor: '#00A8E8' }}
                 >
-                  {creating ? 'Création...' : 'Créer'}
+                  Fermer
                 </button>
               </div>
-            </div>
+            ) : (
+              // Formulaire
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-bold">Nouvel administrateur</h2>
+                  <button onClick={closeCreateModal} className="cursor-pointer">
+                    <X size={20} className="text-gray-400" />
+                  </button>
+                </div>
+
+                <p className="text-sm text-gray-500 mb-4">
+                  Un mot de passe sera généré automatiquement et envoyé par email.
+                </p>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nom complet</label>
+                    <input
+                      type="text"
+                      value={newName}
+                      onChange={e => setNewName(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00A8E8]"
+                      placeholder="Jean Dupont"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input
+                      type="email"
+                      value={newEmail}
+                      onChange={e => setNewEmail(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00A8E8]"
+                      placeholder="nom@cartel.ga"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Rôle</label>
+                    <select
+                      value={newRole}
+                      onChange={e => setNewRole(e.target.value as AdminRole)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00A8E8]"
+                    >
+                      {ROLES.map(r => (
+                        <option key={r.value} value={r.value}>{r.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={closeCreateModal}
+                      className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      onClick={createAdmin}
+                      disabled={creating || !newEmail || !newName}
+                      className="flex-1 py-2.5 text-white rounded-xl text-sm font-medium hover:opacity-90 disabled:opacity-50 transition cursor-pointer"
+                      style={{ backgroundColor: '#00A8E8' }}
+                    >
+                      {creating ? 'Création...' : 'Créer & Envoyer'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal changement de mot de passe */}
+      {changingPwdFor && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
+            {pwdChanged ? (
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+                  <Check size={32} className="text-green-600" />
+                </div>
+                <h2 className="text-lg font-bold">Mot de passe modifié !</h2>
+                <p className="text-sm text-gray-500 mt-2">{changingPwdFor.full_name}</p>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-bold">Changer le mot de passe</h2>
+                  <button onClick={() => { setChangingPwdFor(null); setNewPwd('') }} className="cursor-pointer">
+                    <X size={20} className="text-gray-400" />
+                  </button>
+                </div>
+                <p className="text-sm text-gray-500 mb-4">{changingPwdFor.full_name} ({changingPwdFor.email})</p>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nouveau mot de passe</label>
+                  <input
+                    type="password"
+                    value={newPwd}
+                    onChange={e => setNewPwd(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00A8E8]"
+                    placeholder="Minimum 6 caractères"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => { setChangingPwdFor(null); setNewPwd('') }}
+                    className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={changePassword}
+                    disabled={newPwd.length < 6}
+                    className="flex-1 py-2.5 text-white rounded-xl text-sm font-medium hover:opacity-90 disabled:opacity-50 transition cursor-pointer"
+                    style={{ backgroundColor: '#00A8E8' }}
+                  >
+                    Modifier
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -242,16 +401,25 @@ export default function AdminsPage() {
                   </span>
                 </td>
                 <td className="py-3 px-4 text-right">
-                  <button
-                    onClick={() => toggleActive(admin)}
-                    className="p-1.5 hover:bg-gray-100 rounded-lg transition cursor-pointer"
-                    title={admin.is_active ? 'Désactiver' : 'Activer'}
-                  >
-                    {admin.is_active
-                      ? <ShieldOff size={14} className="text-red-400" />
-                      : <Shield size={14} className="text-green-400" />
-                    }
-                  </button>
+                  <div className="flex items-center justify-end gap-1">
+                    <button
+                      onClick={() => setChangingPwdFor(admin)}
+                      className="p-1.5 hover:bg-gray-100 rounded-lg transition cursor-pointer"
+                      title="Changer le mot de passe"
+                    >
+                      <Key size={14} className="text-gray-400" />
+                    </button>
+                    <button
+                      onClick={() => toggleActive(admin)}
+                      className="p-1.5 hover:bg-gray-100 rounded-lg transition cursor-pointer"
+                      title={admin.is_active ? 'Désactiver' : 'Activer'}
+                    >
+                      {admin.is_active
+                        ? <ShieldOff size={14} className="text-red-400" />
+                        : <Shield size={14} className="text-green-400" />
+                      }
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
