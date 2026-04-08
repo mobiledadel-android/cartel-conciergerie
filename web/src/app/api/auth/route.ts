@@ -6,7 +6,8 @@ export const runtime = 'edge'
 export async function POST(request: Request) {
   const { password } = await request.json()
 
-  if (password === process.env.ADMIN_PASSWORD) {
+  const adminPassword = process.env.ADMIN_PASSWORD || 'cartel2024admin'
+  if (password === adminPassword) {
     const cookieStore = await cookies()
     cookieStore.set('admin_session', 'authenticated', {
       httpOnly: true,
