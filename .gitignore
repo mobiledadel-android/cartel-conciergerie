@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+.dart_tool/
+.packages
+
+# Build
+build/
+.next/
+out/
+.vercel/
+
+# Environment
+.env
+.env.local
+web/.env.local
+backend/config/.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Flutter
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/.pub-cache/
+app/ios/Pods/
+app/ios/.symlinks/
+
+# Firebase
+app/android/app/google-services.json
+app/ios/Runner/GoogleService-Info.plist
