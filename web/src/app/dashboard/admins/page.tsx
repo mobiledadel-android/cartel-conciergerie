@@ -30,10 +30,9 @@ export default function AdminsPage() {
     loadAdmins()
   }, [])
 
-  async function loadCurrentAdmin() {
-    const res = await fetch('/api/auth')
-    const data = await res.json()
-    if (data.admin) setCurrentAdmin(data.admin)
+  function loadCurrentAdmin() {
+    const session = localStorage.getItem('admin_session')
+    if (session) setCurrentAdmin(JSON.parse(session))
   }
 
   async function loadAdmins() {

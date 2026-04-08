@@ -23,25 +23,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/auth')
-      .then(r => r.json())
-      .then(data => {
-        if (data.admin) {
-          setAdmin(data.admin)
-        } else {
-          router.push('/')
-        }
-        setLoading(false)
-      })
-      .catch(() => {
+    const session = localStorage.getItem('admin_session')
+    if (session) {
+      try {
+        setAdmin(JSON.parse(session))
+      } catch {
+        localStorage.removeItem('admin_session')
         router.push('/')
-        setLoading(false)
-      })
+      }
+    } else {
+      router.push('/')
+    }
+    setLoading(false)
   }, [router])
 
-  async function handleLogout() {
-    await fetch('/api/auth', { method: 'DELETE' })
-    router.push('/')
+  function handleLogout() {
+    localStorage.removeItem('admin_session')
+    window.location.href = '/'
   }
 
   if (loading) {
@@ -56,7 +54,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-6 border-b border-gray-200">
           <h1 className="text-lg font-bold" style={{ color: '#00A8E8' }}>Cartel Conciergeries</h1>
@@ -73,9 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 key={item.href}
                 href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${
-                  isActive
-                    ? 'text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
+                  isActive ? 'text-white' : 'text-gray-600 hover:bg-gray-100'
                 }`}
                 style={isActive ? { backgroundColor: '#00A8E8' } : undefined}
               >
@@ -86,7 +81,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
 
-        {/* Profil admin */}
         <div className="p-4 border-t border-gray-200">
           <div className="px-4 py-2 mb-2">
             <p className="text-sm font-medium truncate">{admin.full_name}</p>
@@ -105,7 +99,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* Content */}
       <main className="flex-1 p-8 overflow-auto">
         {children}
       </main>

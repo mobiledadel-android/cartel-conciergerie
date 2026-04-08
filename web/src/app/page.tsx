@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
@@ -9,6 +9,13 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    const session = localStorage.getItem('admin_session')
+    if (session) {
+      router.push('/dashboard')
+    }
+  }, [router])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -23,9 +30,9 @@ export default function LoginPage() {
 
     const data = await res.json()
 
-    if (res.ok) {
+    if (res.ok && data.admin) {
+      localStorage.setItem('admin_session', JSON.stringify(data.admin))
       window.location.href = '/dashboard'
-      return
     } else {
       setError(data.error || 'Erreur de connexion')
     }
@@ -44,9 +51,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
               type="email"
               value={email}
@@ -58,9 +63,7 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Mot de passe
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
             <input
               type="password"
               value={password}
