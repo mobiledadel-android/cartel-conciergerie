@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { getSupabase } from '@/lib/supabase'
 import { formatPrice } from '@/lib/format'
 
 type CategoryStat = {
@@ -20,11 +20,11 @@ export default function StatsPage() {
   useEffect(() => { loadStats() }, [])
 
   async function loadStats() {
-    const { data: missions } = await supabase
+    const { data: missions } = await getSupabase()
       .from('missions')
       .select('*, services(category)')
 
-    const { data: profiles } = await supabase
+    const { data: profiles } = await getSupabase()
       .from('profiles')
       .select('id, first_name, last_name')
       .eq('role', 'prestataire')

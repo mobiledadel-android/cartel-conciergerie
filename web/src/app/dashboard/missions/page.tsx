@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { getSupabase } from '@/lib/supabase'
 import { formatPrice, formatDate, formatStatus, formatMissionType } from '@/lib/format'
 import { Eye, Filter } from 'lucide-react'
 
@@ -29,7 +29,7 @@ export default function MissionsPage() {
   useEffect(() => { loadMissions() }, [])
 
   async function loadMissions() {
-    const { data } = await supabase
+    const { data } = await getSupabase()
       .from('missions')
       .select('*, services(name, category), client:client_id(first_name, last_name, phone), prestataire:prestataire_id(first_name, last_name, phone)')
       .order('created_at', { ascending: false })

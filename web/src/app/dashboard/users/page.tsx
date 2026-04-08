@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { getSupabase } from '@/lib/supabase'
 import { formatDate, formatRole } from '@/lib/format'
 import { Filter, Shield, ShieldOff } from 'lucide-react'
 
@@ -27,7 +27,7 @@ export default function UsersPage() {
   useEffect(() => { loadUsers() }, [])
 
   async function loadUsers() {
-    const { data } = await supabase
+    const { data } = await getSupabase()
       .from('profiles')
       .select('*')
       .order('created_at', { ascending: false })
@@ -36,7 +36,7 @@ export default function UsersPage() {
   }
 
   async function toggleVerified(user: User) {
-    await supabase
+    await getSupabase()
       .from('profiles')
       .update({ is_verified: !user.is_verified })
       .eq('id', user.id)
@@ -44,7 +44,7 @@ export default function UsersPage() {
   }
 
   async function toggleActive(user: User) {
-    await supabase
+    await getSupabase()
       .from('profiles')
       .update({ is_active: !user.is_active })
       .eq('id', user.id)
@@ -52,7 +52,7 @@ export default function UsersPage() {
   }
 
   async function changeRole(userId: string, role: string) {
-    await supabase
+    await getSupabase()
       .from('profiles')
       .update({ role })
       .eq('id', userId)

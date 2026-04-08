@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { getSupabase } from '@/lib/supabase'
 import { formatPrice } from '@/lib/format'
 import { Users, ClipboardList, Package, TrendingUp } from 'lucide-react'
 
@@ -23,10 +23,10 @@ export default function DashboardPage() {
 
   async function loadStats() {
     const [users, prestataires, missions, services] = await Promise.all([
-      supabase.from('profiles').select('id', { count: 'exact', head: true }),
-      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'prestataire'),
-      supabase.from('missions').select('*'),
-      supabase.from('services').select('id', { count: 'exact', head: true }),
+      getSupabase().from('profiles').select('id', { count: 'exact', head: true }),
+      getSupabase().from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'prestataire'),
+      getSupabase().from('missions').select('*'),
+      getSupabase().from('services').select('id', { count: 'exact', head: true }),
     ])
 
     const missionData = missions.data || []

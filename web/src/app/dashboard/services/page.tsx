@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { getSupabase } from '@/lib/supabase'
 import { formatPrice } from '@/lib/format'
 import { Plus, Pencil, Trash2, X, Check } from 'lucide-react'
 
@@ -50,7 +50,7 @@ export default function ServicesPage() {
   useEffect(() => { loadServices() }, [])
 
   async function loadServices() {
-    const { data } = await supabase
+    const { data } = await getSupabase()
       .from('services')
       .select('*')
       .order('category')
@@ -73,9 +73,9 @@ export default function ServicesPage() {
     }
 
     if (isNew) {
-      await supabase.from('services').insert(payload)
+      await getSupabase().from('services').insert(payload)
     } else {
-      await supabase.from('services').update(payload).eq('id', editing.id)
+      await getSupabase().from('services').update(payload).eq('id', editing.id)
     }
 
     setEditing(null)
@@ -85,7 +85,7 @@ export default function ServicesPage() {
 
   async function deleteService(id: string) {
     if (!confirm('Supprimer ce service ?')) return
-    await supabase.from('services').delete().eq('id', id)
+    await getSupabase().from('services').delete().eq('id', id)
     loadServices()
   }
 
