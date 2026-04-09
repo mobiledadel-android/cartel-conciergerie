@@ -8,6 +8,7 @@ import '../missions/mission_detail_screen.dart';
 import '../chat/chat_list_screen.dart';
 import '../profile/profile_screen.dart';
 import '../notifications/notifications_screen.dart';
+import '../agent/agent_missions_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,12 +19,26 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  String _role = 'client';
 
-  final _pages = const [
-    _HomeContent(),
-    MissionsScreen(),
-    ChatListScreen(),
-    ProfileScreen(),
+  @override
+  void initState() {
+    super.initState();
+    _loadRole();
+  }
+
+  Future<void> _loadRole() async {
+    final profile = await AuthService().getProfile();
+    if (mounted && profile != null) {
+      setState(() => _role = profile['role'] ?? 'client');
+    }
+  }
+
+  List<Widget> get _pages => [
+    const _HomeContent(),
+    _role == 'prestataire' ? const AgentMissionsScreen() : const MissionsScreen(),
+    const ChatListScreen(),
+    const ProfileScreen(),
   ];
 
   @override
