@@ -5,6 +5,7 @@ import 'firebase_options.dart';
 import 'config/theme.dart';
 import 'config/supabase_config.dart';
 import 'services/auth_service.dart';
+import 'services/notification_service.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/complete_profile_screen.dart';
 import 'screens/home/home_screen.dart';
@@ -20,6 +21,9 @@ void main() async {
   // Initialiser Supabase (données)
   await SupabaseConfig.initialize();
 
+  // Initialiser OneSignal (notifications push)
+  await NotificationService.initialize();
+
   runApp(const CartelApp());
 }
 
@@ -30,6 +34,11 @@ class CartelApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final authService = AuthService();
     final isLoggedIn = authService.isLoggedIn;
+
+    // Associer l'utilisateur à OneSignal si connecté
+    if (isLoggedIn) {
+      NotificationService.setExternalUserId();
+    }
 
     return MaterialApp(
       title: 'Cartel Conciergeries',

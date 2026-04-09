@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../config/theme.dart';
 import '../../services/auth_service.dart';
 import '../auth/login_screen.dart';
+import '../missions/history_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -207,7 +208,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _ProfileTile(
               icon: Icons.history,
               title: 'Historique',
-              onTap: () {},
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen()));
+              },
             ),
             _ProfileTile(
               icon: Icons.help_outline,

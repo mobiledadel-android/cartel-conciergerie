@@ -3,7 +3,9 @@ import '../../config/theme.dart';
 import '../../config/constants.dart';
 import '../../services/mission_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/review_service.dart';
 import '../chat/chat_screen.dart';
+import 'review_screen.dart';
 
 class MissionDetailScreen extends StatefulWidget {
   final String missionId;
@@ -17,9 +19,11 @@ class MissionDetailScreen extends StatefulWidget {
 class _MissionDetailScreenState extends State<MissionDetailScreen> {
   final _missionService = MissionService();
   final _authService = AuthService();
+  final _reviewService = ReviewService();
   Map<String, dynamic>? _mission;
   Map<String, dynamic>? _profile;
   bool _isLoading = true;
+  bool _hasReviewed = false;
 
   @override
   void initState() {
@@ -30,8 +34,10 @@ class _MissionDetailScreenState extends State<MissionDetailScreen> {
   Future<void> _load() async {
     final mission = await _missionService.getMission(widget.missionId);
     final profile = await _authService.getProfile();
+    final reviewed = await _reviewService.hasReviewed(widget.missionId);
     if (mounted) {
       setState(() {
+        _hasReviewed = reviewed;
         _mission = mission;
         _profile = profile;
         _isLoading = false;
@@ -281,6 +287,48 @@ class _MissionDetailScreenState extends State<MissionDetailScreen> {
           ),
         ),
       );
+    }
+
+    // Donner un avis après mission terminée
+    if (status == 'completed' && !_hasReviewed) {
+      final mission = _mission!;
+      final service = mission['services'] as Map<String, dynamic>?;
+      // Le client note le prestataire, le prestataire note le client
+      final reviewedId = _isClient ? mission['prestataire_id'] : mission['client_id'];
+      final reviewed = _isClient
+          ? mission['prestataire'] as Map<String, dynamic>?
+          : mission['client'] as Map<String, dynamic>?;
+      final reviewedName = reviewed != null
+          ? '${reviewed['first_name']} ${reviewed['last_name']}'
+          : '';
+
+      if (reviewedId != null) {
+        if (actions.isNotEmpty) actions.add(const SizedBox(height: 12));
+        actions.add(
+          ElevatedButton.icon(
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ReviewScreen(
+                    missionId: widget.missionId,
+                    reviewedId: reviewedId,
+                    reviewedName: reviewedName,
+                    serviceName: service?['name'] ?? 'Mission',
+                  ),
+                ),
+              );
+              if (result == true) _load();
+            },
+            icon: const Icon(Icons.star_outline_rounded),
+            label: const Text('Donner un avis'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        );
+      }
     }
 
     return actions;

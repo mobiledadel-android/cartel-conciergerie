@@ -7,6 +7,7 @@ import '../missions/service_list_screen.dart';
 import '../missions/mission_detail_screen.dart';
 import '../chat/chat_list_screen.dart';
 import '../profile/profile_screen.dart';
+import '../notifications/notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -161,7 +162,9 @@ class _HomeContentState extends State<_HomeContent> {
                     ),
                   const SizedBox(width: 8),
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+                    },
                     icon: Badge(
                       smallSize: 8,
                       child:
