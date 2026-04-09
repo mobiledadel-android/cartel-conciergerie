@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState, useCallback } from 'react'
 import {
   LayoutDashboard, Package, ClipboardList, Users, BarChart3,
-  LogOut, Shield, ScrollText, Menu, X, Moon, Sun, User, Bell,
+  LogOut, Shield, ScrollText, Menu, X, Moon, Sun, User, Bell, Settings,
 } from 'lucide-react'
 import { type Admin, type AdminRole, hasPermission, getRoleLabel, getRoleColor } from '@/lib/admin'
 import { getSupabase } from '@/lib/supabase'
@@ -17,6 +17,7 @@ const allNavItems = [
   { href: '/dashboard/missions', label: 'Missions', icon: ClipboardList, permission: 'manage_missions' },
   { href: '/dashboard/users', label: 'Utilisateurs', icon: Users, permission: 'manage_users' },
   { href: '/dashboard/admins', label: 'Administrateurs', icon: Shield, permission: 'manage_admins' },
+  { href: '/dashboard/settings', label: 'Paramètres', icon: Settings, permission: 'manage_services' },
   { href: '/dashboard/logs', label: 'Journal', icon: ScrollText, permission: 'view_logs' },
   { href: '/dashboard/stats', label: 'Statistiques', icon: BarChart3, permission: 'view_stats' },
 ]
