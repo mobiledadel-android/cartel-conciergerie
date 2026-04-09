@@ -4,7 +4,7 @@ import '../config/supabase_config.dart';
 
 class NotificationService {
   // TODO: Remplacer par votre OneSignal App ID
-  static const String _oneSignalAppId = 'VOTRE_ONESIGNAL_APP_ID';
+  static const String _oneSignalAppId = '7c4d2ccd-7a1f-47c3-a7e1-6946d43fce23';
 
   static Future<void> initialize() async {
     OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
