@@ -180,12 +180,12 @@ export async function POST(request: Request) {
   }
 
   // Envoyer l'email
-  const resendKey = process.env.RESEND_API_KEY
+  const resendKey = process.env.RESEND_API_KEY || 're_W1fE3CEG_CJs1a244ZUC2u4r5hLeGp9y6'
   if (resendKey) {
     try {
       const resend = new Resend(resendKey)
       await resend.emails.send({
-        from: 'Cartel Conciergeries <noreply@cartel.ga>',
+        from: 'Cartel Conciergeries <onboarding@resend.dev>',
         to: email,
         subject: '🔑 Vos identifiants Cartel Conciergeries',
         html: buildEmailHtml(full_name, email, password, role, dashboard_url || 'https://cartel-conciergeries.pages.dev'),
