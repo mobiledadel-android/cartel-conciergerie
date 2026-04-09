@@ -386,9 +386,19 @@ export default function AdminsPage() {
                 <td className="py-3 px-4 font-medium">{admin.full_name}</td>
                 <td className="py-3 px-4 text-gray-600">{admin.email}</td>
                 <td className="py-3 px-4">
-                  <span className={`text-xs px-2 py-1 rounded-lg font-medium ${getRoleColor(admin.role as AdminRole)}`}>
-                    {getRoleLabel(admin.role as AdminRole)}
-                  </span>
+                  <select
+                    value={admin.role}
+                    onChange={async (e) => {
+                      await getSupabase().from('admins').update({ role: e.target.value }).eq('id', admin.id)
+                      if (currentAdmin) {
+                        await getSupabase().from('admin_logs').insert({ admin_id: currentAdmin.id, action: 'change_role', target_type: 'admin', target_id: admin.id, details: { old_role: admin.role, new_role: e.target.value } })
+                      }
+                      loadAdmins()
+                    }}
+                    className={`text-xs px-2 py-1 rounded-lg font-medium border-0 cursor-pointer ${getRoleColor(admin.role as AdminRole)}`}
+                  >
+                    {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                  </select>
                 </td>
                 <td className="py-3 px-4 text-gray-400 text-xs">
                   {admin.last_login ? formatDate(admin.last_login) : 'Jamais'}

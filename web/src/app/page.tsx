@@ -32,6 +32,7 @@ export default function LoginPage() {
 
     if (res.ok && data.admin) {
       localStorage.setItem('admin_session', JSON.stringify(data.admin))
+      localStorage.setItem('admin_session_time', String(Date.now()))
       window.location.href = '/dashboard'
     } else {
       setError(data.error || 'Erreur de connexion')
